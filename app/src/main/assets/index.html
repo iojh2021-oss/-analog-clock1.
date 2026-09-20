@@ -26,6 +26,7 @@ document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelect
 const db=()=>new Promise((ok,no)=>{let r=indexedDB.open('dashboard-bg',1);r.onupgradeneeded=()=>r.result.createObjectStore('files');r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)});async function bg(){try{let d=await db(),r=d.transaction('files').objectStore('files').get('bg');r.onsuccess=()=>{if(r.result)$('#bg').src=URL.createObjectURL(r.result)}}catch(e){}}$('#bgBtn').onclick=()=>$('#file').click();$('#pick').onclick=()=>$('#file').click();$('#file').onchange=async e=>{let f=e.target.files?.[0];if(!f)return;let d=await db();d.transaction('files','readwrite').objectStore('files').put(f,'bg');bg()};$('#reset').onclick=async()=>{let d=await db();d.transaction('files','readwrite').objectStore('files').delete('bg');$('#bg').removeAttribute('src')};bg();
 </script><script>(function(){
 var LIST=[['دلار آمریکا','price_dollar_rl'],['یورو','price_eur'],['پوند انگلیس','price_gbp'],['درهم امارات','price_aed'],['لیر ترکیه','price_try'],['دلار کانادا','price_cad'],['فرانک سوئیس','price_chf'],['سکه بهار آزادی','sekeb'],['نیم سکه','nim'],['ربع سکه','rob']];
+var FL={price_dollar_rl:'🇺🇸',price_eur:'🇪🇺',price_gbp:'🇬🇧',price_aed:'🇦🇪',price_try:'🇹🇷',price_cad:'🇨🇦',price_chf:'🇨🇭',sekeb:'🪙',nim:'🪙',rob:'🪙'};
 var URL='https://call5.tgju.org/ajax.json',KEY='rates:v2',box=document.getElementById('rates'),meta=document.getElementById('rateMeta'),metaHTML=meta?meta.innerHTML:'';
 var busy=false,timer=null,guard=null,fails=0;
 function pfa(s){return String(s).replace(/[0-9]/g,function(c){return '۰۱۲۳۴۵۶۷۸۹'[c]})}
@@ -38,7 +39,7 @@ function render(d,savedAt){
   LIST.forEach(function(it){
     var v=d[it[1]];if(!v)return;
     var up=v.dt==='high',dn=v.dt==='low',col=up?'#5ee08a':dn?'#ff7b7b':'#fffb',sg=up?'▲ ':dn?'▼ ':'';
-    h+='<div class="row"><div class="rate">'+it[0]+'<small>'+hm(v.ts)+'</small></div>'
+    h+='<div class="row"><div class="rate">'+(FL[it[1]]?FL[it[1]]+' ':'')+it[0]+'<small>'+hm(v.ts)+'</small></div>'
       +'<div class="rate">'+fmt(num(v.p)/10)+'<small>تومان</small></div>'
       +'<div class="rate" style="color:'+col+'">'+sg+fmt(+v.dp||0,2)+'٪<small>'+fmt(num(v.d)/10)+'</small></div></div>';
   });
