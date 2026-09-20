@@ -7,9 +7,15 @@ import android.content.Intent;
 import android.net.Uri;
 import android.view.View;
 import android.widget.Toast;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 
 public class MainActivity extends Activity {
     private WebView web;
+    private ConnectivityManager cm;
+    private ConnectivityManager.NetworkCallback netCb;
     private ValueCallback<Uri[]> uploadCallback;
     private static final int FILE_PICKER = 1001;
 
@@ -45,6 +51,18 @@ public class MainActivity extends Activity {
             }
         });
         web.loadUrl("file:///android_asset/index.html");
+        try {
+            cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+            netCb = new ConnectivityManager.NetworkCallback() {
+                @Override public void onAvailable(Network n) {
+                    web.post(new Runnable() { public void run() {
+                        web.setNetworkAvailable(true);
+                        web.evaluateJavascript("window.dispatchEvent(new Event('online'))", null);
+                    }});
+                }
+            };
+            cm.registerNetworkCallback(new NetworkRequest.Builder().addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).build(), netCb);
+        } catch (Exception e) {}
     }
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -61,6 +79,11 @@ public class MainActivity extends Activity {
             uploadCallback = null;
         }
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    @Override protected void onDestroy() {
+        try { if (cm != null && netCb != null) cm.unregisterNetworkCallback(netCb); } catch (Exception e) {}
+        super.onDestroy();
     }
 
     @Override public void onBackPressed() {
