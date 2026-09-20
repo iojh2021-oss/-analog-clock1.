@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>پیش‌نمایش رابط ساعت، ارز و آب‌وهوا</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;background:#000;color:#fff;font-family:Tahoma,Arial,sans-serif}body{min-height:100vh}.app{max-width:520px;margin:auto;background:#000;min-height:100vh}.tabs{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid #333;position:sticky;top:0;background:#000;z-index:5}.tabs button{background:#000;color:#777;border:0;border-bottom:2px solid transparent;padding:15px 5px}.tabs button.active{color:#fff;border-bottom-color:#fff;font-weight:bold}.page{display:none}.page.active{display:block}
+.clock{padding:18px 14px;text-align:center}.date{text-align:right;font-size:15px;font-weight:bold;line-height:1.8}.date small{display:block;color:#999;font-size:11px}.clock canvas{width:min(88vw,390px);height:min(88vw,390px);display:block;margin:4px auto 10px}.digital{font-size:19px;letter-spacing:2px}.muted{color:#777;font-size:10px;margin-top:7px}
+.currency{padding-bottom:30px}.title{font-size:32px;text-align:center;font-weight:900;padding:25px 8px 16px}.head,.row{display:grid;grid-template-columns:1.35fr 1fr 1fr;align-items:center;gap:6px}.head{border-top:2px solid #777;border-bottom:1px solid #777;padding:14px 12px;color:#ddd;font-size:12px}.row{min-height:68px;border-bottom:1px solid #292929;padding:8px 12px}.name{display:flex;align-items:center;gap:7px;font-weight:900;font-size:14px}.flag{font-size:20px}.price{text-align:center;font-size:14px;font-weight:bold}.price small{display:block;color:#777;font-size:9px;font-weight:normal}
+.weather{min-height:calc(100vh - 54px);position:relative;padding:24px 20px 35px;overflow:hidden;background:linear-gradient(135deg,#b5d2d5,#2e7182 42%,#0b2e40)}.weather:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 20% 72%,rgba(255,220,120,.65),transparent 27%),radial-gradient(circle at 80% 15%,rgba(255,255,255,.2),transparent 30%);pointer-events:none}.weather>*{position:relative}.for{display:inline-block;background:#fff;color:#0c5271;border-radius:12px;padding:8px 13px;font-size:17px;font-weight:900}.hero{font-size:38px;line-height:1.2;font-weight:900;margin:18px 0}.citybox{background:#0d719c;border-radius:8px;padding:17px 18px;display:flex;align-items:center;gap:15px;font-size:23px;font-weight:900;margin-bottom:32px}.citybox span{font-size:43px}.select{width:100%;background:#fff;color:#111;border:0;border-radius:8px;padding:13px;margin-bottom:14px;font-size:15px}.summary{font-size:17px;font-weight:bold;margin-bottom:22px}.hours{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;text-align:center}.hour{font-size:15px}.temp{font-size:34px;margin:14px 0}.icon{font-size:44px}.rain{font-size:16px;margin-top:10px}.note{margin-top:28px;font-size:10px;color:#d7e7ea}
+</style>
+</head>
+<body>
+<div class="app">
+<nav class="tabs"><button class="active" data-p="clock">ساعت</button><button data-p="currency">ارز</button><button data-p="weather">آب‌وهوا</button></nav>
+
+<section id="clock" class="page active clock"><div id="date" class="date"></div><canvas id="face" width="700" height="700"></canvas><div id="time" class="digital"></div><div class="muted">زمان و تاریخ شمسی دستگاه</div></section>
+
+<section id="currency" class="page currency"><div class="title">بازار ارز</div><div class="head"><b>نوع ارز</b><b>خرید</b><b>فروش</b></div><div id="rates"></div></section>
+
+<section id="weather" class="page weather">
+<div class="for">برای شما:</div><div class="hero">آب‌وهوای شما.<br>در یک نگاه.</div>
+<select id="city" class="select"></select>
+<div class="citybox"><span id="bigIcon">☀️</span><div id="cityName">تهران</div></div>
+<div id="summary" class="summary">آفتابی و گاهی ابری در طول روز</div>
+<div class="hours"><div class="hour"><div>ساعت ۱۳</div><div class="temp">۲۷°</div><div class="icon">☀️</div><div class="rain">💧 ۲۰٪</div></div><div class="hour"><div>ساعت ۱۴</div><div class="temp">۲۶°</div><div class="icon">🌦️</div><div class="rain">💧 ۸۰٪</div></div></div>
+<div class="note">این صفحه نمونه‌ی UI است؛ در مرحله بعد داده زنده‌ی هواشناسی و ارز به آن متصل می‌شود.</div>
+</section>
+</div>
+<script>
+const fa=n=>new Intl.NumberFormat('fa-IR').format(n);
+function solarDate(){const d=new Date();return new Intl.DateTimeFormat('fa-IR-u-ca-persian',{weekday:'long',year:'numeric',month:'long',day:'numeric'}).format(d)}
+function clock(){const c=document.querySelector('#face'),x=c.getContext('2d'),S=c.width,C=S/2,R=S*.40;function draw(){x.clearRect(0,0,S,S);x.fillStyle='#000';x.fillRect(0,0,S,S);[R*1.13,R*1.07,R].forEach((r,i)=>{x.beginPath();x.arc(C,C,r,0,Math.PI*2);x.lineWidth=i===2?5:10;x.strokeStyle=i===2?'#fff':'#444';x.stroke()});for(let i=0;i<60;i++){let a=i*Math.PI/30-Math.PI/2,o=R*.94,inn=o-(i%5?R*.035:R*.075);x.beginPath();x.moveTo(C+Math.cos(a)*inn,C+Math.sin(a)*inn);x.lineTo(C+Math.cos(a)*o,C+Math.sin(a)*o);x.lineWidth=i%5?2:5;x.strokeStyle=i%5?'#777':'#fff';x.stroke()}x.fillStyle='#fff';x.textAlign='center';x.textBaseline='middle';x.font='bold '+R*.17+'px Tahoma';for(let n=1;n<=12;n++){let a=n*Math.PI/6-Math.PI/2;x.fillText(n,C+Math.cos(a)*R*.77,C+Math.sin(a)*R*.77)}let d=new Date(),s=d.getSeconds()+d.getMilliseconds()/1000,m=d.getMinutes()+s/60,h=d.getHours()%12+m/60;const hand=(v,len,w)=>{let a=v*Math.PI/6-Math.PI/2;x.save();x.translate(C,C);x.rotate(a);x.beginPath();x.moveTo(0,R*.07);x.lineTo(0,-len);x.lineWidth=w;x.lineCap='round';x.strokeStyle='#fff';x.stroke();x.restore()};hand(h,R*.47,12);hand(m,R*.70,8);let a=s*Math.PI/30-Math.PI/2;x.save();x.translate(C,C);x.rotate(a);x.beginPath();x.moveTo(0,R*.12);x.lineTo(0,-R*.79);x.lineWidth=4;x.strokeStyle='#aaa';x.stroke();x.restore();x.beginPath();x.arc(C,C,12,0,Math.PI*2);x.fillStyle='#fff';x.fill();x.beginPath();x.arc(C,C,5,0,Math.PI*2);x.fillStyle='#000';x.fill();document.querySelector('#date').innerHTML=solarDate()+'<small>تاریخ شمسی</small>';document.querySelector('#time').textContent=d.toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});requestAnimationFrame(draw)}draw()}
+const rates=[['دلار آمریکا','🇺🇸','—','—'],['یورو','🇪🇺','—','—'],['پوند انگلیس','🇬🇧','—','—'],['درهم امارات','🇦🇪','—','—'],['لیر ترکیه','🇹🇷','—','—'],['یوان چین','🇨🇳','—','—'],['دلار کانادا','🇨🇦','—','—'],['فرانک سوئیس','🇨🇭','—','—']];document.querySelector('#rates').innerHTML=rates.map(r=>'<div class="row"><div class="name"><span class="flag">'+r[1]+'</span>'+r[0]+'</div><div class="price">'+r[2]+'<small>تومان</small></div><div class="price">'+r[3]+'<small>تومان</small></div></div>').join('');
+const cities=['تهران','مشهد','اصفهان','شیراز','تبریز','اهواز','کرج','رشت','قم','ارومیه','کرمان','یزد','ساری','بندرعباس'];const sel=document.querySelector('#city');cities.forEach(c=>sel.add(new Option(c,c)));sel.onchange=()=>document.querySelector('#cityName').textContent=sel.value;
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(z=>z.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.page').forEach(z=>z.classList.remove('active'));document.querySelector('#'+b.dataset.p).classList.add('active')});clock();
+</script>
+</body>
+</html>
