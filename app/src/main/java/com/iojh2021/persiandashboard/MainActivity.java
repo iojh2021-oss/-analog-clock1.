@@ -50,6 +50,7 @@ public class MainActivity extends Activity {
                 return true;
             }
         });
+        web.addJavascriptInterface(new RatesBridge(), "NativeRates");
         web.loadUrl("file:///android_asset/index.html");
         try {
             cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
@@ -79,6 +80,40 @@ public class MainActivity extends Activity {
             uploadCallback = null;
         }
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private class RatesBridge {
+        @android.webkit.JavascriptInterface
+        public void fetchRates() {
+            new Thread(new Runnable() { public void run() {
+                String result = null;
+                try {
+                    java.net.HttpURLConnection c = (java.net.HttpURLConnection) new java.net.URL("https://call5.tgju.org/ajax.json").openConnection();
+                    c.setConnectTimeout(8000);
+                    c.setReadTimeout(15000);
+                    c.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android) PersianDashboard");
+                    c.setRequestProperty("Accept", "application/json");
+                    if (c.getResponseCode() == 200) {
+                        java.io.InputStream in = c.getInputStream();
+                        java.io.ByteArrayOutputStream bo = new java.io.ByteArrayOutputStream();
+                        byte[] buf = new byte[16384];
+                        int n;
+                        while ((n = in.read(buf)) > 0) bo.write(buf, 0, n);
+                        in.close();
+                        org.json.JSONObject cur = new org.json.JSONObject(bo.toString("UTF-8")).getJSONObject("current");
+                        org.json.JSONObject out = new org.json.JSONObject();
+                        String[] keys = {"price_dollar_rl","price_eur","price_gbp","price_aed","price_try","price_cad","price_chf","sekeb","nim","rob"};
+                        for (String k : keys) if (cur.has(k)) out.put(k, cur.getJSONObject(k));
+                        result = out.toString();
+                    }
+                    c.disconnect();
+                } catch (Exception e) { result = null; }
+                final String js = (result == null)
+                    ? "window.onRatesError&&window.onRatesError()"
+                    : "window.onRates&&window.onRates(" + result + ")";
+                web.post(new Runnable() { public void run() { web.evaluateJavascript(js, null); } });
+            }}).start();
+        }
     }
 
     @Override protected void onDestroy() {
