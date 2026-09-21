@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -35,3 +35,11 @@ jobs:
           name: dashboard-farsi-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: انتشار APK در Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk dashboard-farsi.apk
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest dashboard-farsi.apk --title "آخرین نسخه" --notes "ساخت خودکار" --target ${{ github.sha }}
