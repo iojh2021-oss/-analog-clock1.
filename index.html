@@ -8,7 +8,7 @@
 </div>
 <div id="rateMeta" class="meta">نرخ‌ها از منبع بازار TGJU دریافت می‌شوند. واحد دادهٔ بازار ریال است و نمایش نهایی اپ بر پایه تومان تنظیم می‌شود.</div></div></section>
 <section id="cryptoPage" class="page"><div class="glass"><div class="title">قیمت لحظه‌ای ارز دیجیتال</div><div id="cryptoGrid" class="cryptoGrid"></div><div id="cryptoStatus" class="cryptoStatus"></div></div></section>
-<section id="weatherPage" class="page"><div class="glass weather"><div class="weatherTop"><span>وضعیت آب‌وهوا</span><span>🌦️</span></div><select id="city" class="select"></select><div class="current"><div class="main"><div id="cityName" class="city">تهران</div><div id="temp" class="temp">--°</div><div id="cond" class="condition">در حال دریافت...</div></div><div class="metrics"><div class="metric">رطوبت<b id="hum">--٪</b></div><div class="metric">باد<b id="wind">-- km/h</b></div><div class="metric">فشار<b id="press">-- hPa</b></div><div class="metric">بارش<b id="rain">--٪</b></div></div></div><div id="forecast" class="forecast"></div></div></section>
+<section id="weatherPage" class="page"><div class="glass weather"><div class="weatherTop"><span>وضعیت آب‌وهوا</span><span>🌦️</span></div><select id="city" class="select"></select><div class="current"><div class="main"><div id="cityName" class="city">تهران</div><div id="temp" class="temp">--°</div><div id="cond" class="condition">در حال دریافت...</div></div><div class="metrics"><div class="metric">رطوبت<b id="hum">--٪</b></div><div class="metric">باد<b id="wind">-- km/h</b></div><div class="metric">فشار<b id="press">-- hPa</b></div><div class="metric">بارش<b id="rain">--٪</b></div></div></div><div id="forecast" class="forecast"></div></div></section><section id="flightPage" class="page"><div class="glass flights"><div class="flightHead"><div><div class="title">پروازهای بین‌المللی فرودگاه امام خمینی</div><div id="flightDate" class="flightSub"></div></div><button id="flightRefresh" class="flightRefresh">بروزرسانی</button></div><div id="flightAlert" class="flightAlert"></div><div class="flightCols"><b>پرواز</b><b>مقصد</b><b>ساعت</b><b>وضعیت</b></div><div id="flightList"></div><div id="flightStatus" class="flightStatus"></div><div class="help">منابع بررسی: Airportia برای IKA و FlightRadar24 برای IKA/OIIE. فقط پروازهایی که برای فرودگاه امام خمینی گزارش شده‌اند نمایش داده می‌شوند. در صورت اختلاف منابع، وضعیت قطعی اعلام نمی‌شود.</div></div></section>
 <section id="settingsPage" class="page"><div class="glass settings"><h3>تنظیمات اپ</h3><button class="setting" id="pick">تغییر عکس پس‌زمینه 4K</button><button class="setting" id="reset">بازگردانی پس‌زمینه</button><div class="help">منبع قیمت: TGJU. قیمت‌های بازار در منبع به ریال ارائه می‌شوند؛ اپ برای نمایش فارسی آن‌ها را به تومان تبدیل می‌کند.</div><div class="help">عکس انتخابی فقط داخل خود اپ ذخیره می‌شود و تصویر زمینه گوشی اندروید را تغییر نمی‌دهد. این صفحه برای اجرای مستقل اپ طراحی شده است.</div></div></section></div></div><input id="file" type="file" accept="image/*">
 <script>
 const $=s=>document.querySelector(s),fa=n=>new Intl.NumberFormat('fa-IR').format(n);
@@ -110,14 +110,95 @@ run();
 addEventListener('online',run);
 document.addEventListener('visibilitychange',function(){if(!document.hidden)run()});
 var tb=document.querySelector('[data-p="cryptoPage"]');if(tb)tb.addEventListener('click',run);
-})()<script>(function(){
+})()
+<script>(function(){
 var box=document.getElementById('flightList'),alertBox=document.getElementById('flightAlert'),statusBox=document.getElementById('flightStatus'),dateBox=document.getElementById('flightDate'),busy=false,timer=null;
-var SOURCES=[['Airportia','https://www.airportia.com/iran/imam-khomeini-international-airport/departures/'],['FlightRadar24','https://www.flightradar24.com/data/airports/ika/departures']];
+var SOURCES=[
+  {name:'Airportia',url:'https://www.airportia.com/iran/imam-khomeini-international-airport/departures/'},
+  {name:'FlightRadar24',url:'https://www.flightradar24.com/data/airports/ika/departures'}
+];
 function fa(s){return String(s).replace(/[0-9]/g,function(c){return '۰۱۲۳۴۵۶۷۸۹'[c]})}
-function parse(t,src){var lines=t.split(/\n/),o=[];lines.forEach(function(raw){var l=raw.replace(/\*\*/g,'').trim();var code=(l.match(/\b[A-Z]{1,3}\*?\s?\d{1,5}\b/)||[])[0],time=(l.match(/\b\d{1,2}:\d{2}\b/)||[])[0];if(!code||!time)return;code=code.replace(/\s+/g,'');var st=/cancel/i.test(l)?'cancel':/delay/i.test(l)?'delay':/departed|estimated|en.?route|scheduled|on time/i.test(l)?l.match(/Departed|Estimated|En-Route|Scheduled|Delayed[^|]*/i)?.[0]||'Scheduled':'Unknown';var m=l.match(/To:\s*([^|\n]+)/i),dest=m?m[1].replace(/[A-Z]{3,4}$/,'').trim():'—';o.push({code:code,time:time,dest:dest,status:st,source:src})});var s={};return o.filter(function(x){var k=x.code+'|'+x.time;if(s[k])return false;s[k]=1;return true})}
-async function get(s){var u='https://r.jina.ai/http://'+s[1].replace(/^https?:\/\//,'');var r=await fetch(u,{cache:'no-store'});if(!r.ok)throw 0;return parse(await r.text(),s[0])}
-function status(s){s=s.toLowerCase();return /cancel/.test(s)?['cancel','لغو شده']:/delay/.test(s)?['delay','با تأخیر']:/departed|estimated|en.?route|on time/.test(s)?['ok','تأییدشده']:['unknown','برنامه‌ریزی‌شده']}
-function render(all,n){var m={};all.forEach(function(x){var k=x.code+'|'+x.time;(m[k]||(m[k]=[])).push(x)});var rows=Object.keys(m).map(function(k){var a=m[k],cancel=a.some(function(x){return status(x.status)[0]=='cancel'}),delay=a.some(function(x){return status(x.status)[0]=='delay'}),x=a[0];return{code:x.code,time:x.time,dest:x.dest,sources:a.length,cancel:cancel,delay:delay}}).sort(function(a,b){return a.time.localeCompare(b.time)});if(!rows.length){box.innerHTML='<div class="meta">فهرست امروز دریافت نشد.</div>';return}box.innerHTML=rows.map(function(x){var q=x.cancel?['cancel','لغو شده']:x.delay?['delay','با تأخیر']:['ok','برنامه‌ریزی‌شده'];return '<div class="flightRow"><div class="flightNo">'+x.code+'<small style="display:block;color:#fffb;font-size:7px">'+(x.sources>=2?'تأیید دو منبع':'یک منبع')+'</small></div><div class="flightDest">'+x.dest+'</div><div class="flightTime">'+fa(x.time)+'</div><div class="flightBadge '+q[0]+'">'+q[1]+'</div></div>'}).join('');var c=rows.filter(function(x){return x.cancel}).length;alertBox.classList.toggle('show',c===rows.length&&rows.length>0);if(c===rows.length)alertBox.textContent='⚠️ همه پروازهای فهرست‌شده امروز لغو گزارش شده‌اند؛ هشدار فقط در صورت دریافت همین وضعیت از منابع بررسی‌شده نمایش داده می‌شود.';statusBox.textContent='آخرین بررسی '+fa(new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Tehran'}))+' · '+fa(n)+' منبع · در صورت اختلاف منابع، وضعیت قطعی اعلام نمی‌شود.'}
-async function run(){if(busy)return;busy=true;dateBox.textContent=new Intl.DateTimeFormat('fa-IR-u-ca-persian',{timeZone:'Asia/Tehran',dateStyle:'full'}).format(new Date());statusBox.textContent='در حال بررسی دو منبع زنده…';try{var r=await Promise.all(SOURCES.map(get)),all=[];r.forEach(function(x){all=all.concat(x)});render(all,r.length)}catch(e){box.innerHTML='<div class="meta">اتصال به منابع زنده ناموفق بود؛ برای جلوگیری از نمایش اطلاعات قدیمی، داده قبلی نمایش داده نمی‌شود.</div>';statusBox.textContent='دریافت زنده ناموفق بود؛ تلاش بعدی خودکار انجام می‌شود.'}finally{busy=false;clearTimeout(timer);timer=setTimeout(run,120000)}}
-document.getElementById('flightRefresh').onclick=run;run();
+function norm(s){return String(s||'').replace(/[—–]/g,'-').replace(/\s+/g,' ').trim()}
+function parseAirportia(text){
+  var out=[],lines=text.split(/\n+/);
+  lines.forEach(function(raw){
+    var l=norm(raw);
+    var m=l.match(/\b([A-Z]{1,3}\*?\d{1,5})\b\s+([^|]+?)\s+(\d{1,2}:\d{2})\s+(Scheduled|Delayed(?:\s*>?\s*\d+h)?|En-Route|Departed|Cancelled|Canceled|Unknown)/i);
+    if(!m)return;
+    var dest=m[2].trim();
+    if(dest.length>40)return;
+    out.push({code:m[1].replace('*',''),dest:dest,time:m[3],status:m[4],source:'Airportia'});
+  });
+  return out;
+}
+function parseFR24(text){
+  var out=[],lines=text.split(/\n+/);
+  lines.forEach(function(raw){
+    var l=norm(raw);
+    var m=l.match(/\b([A-Z]{1,3}\d{1,5})\b/);
+    var tm=l.match(/\b(\d{1,2}:\d{2})\s*(AM|PM)?\b/i);
+    if(!m||!tm)return;
+    var status=/\bCancelled\b|\bCanceled\b/i.test(l)?'Cancelled':/\bDelayed\b/i.test(l)?'Delayed':/\bDeparted\b/i.test(l)?'Departed':/\bEn[- ]Route\b/i.test(l)?'En-Route':'Scheduled';
+    var dm=l.match(/To:\s*([^\n]+?)(?:[A-Z]{3,4}\b)?$/i);
+    var dest=dm?dm[1].trim():'—';
+    out.push({code:m[1],dest:dest,time:tm[1],status:status,source:'FlightRadar24'});
+  });
+  return out;
+}
+function key(x){return x.code+'|'+x.time}
+function rank(s){s=String(s).toLowerCase();if(/cancel/.test(s))return 5;if(/delay/.test(s))return 4;if(/en.?route|departed/.test(s))return 3;if(/scheduled/.test(s))return 2;return 1}
+function statusLabel(a){
+  var sts=a.map(function(x){return x.status});
+  var uniq=sts.filter(function(v,i){return sts.indexOf(v)===i});
+  if(uniq.some(function(s){return /cancel/i.test(s)}) && uniq.some(function(s){return /scheduled|delay|en.?route|departed/i.test(s)}))return ['unknown','اختلاف منابع'];
+  var s=uniq.sort(function(x,y){return rank(y)-rank(x)})[0]||'Unknown';
+  if(/cancel/i.test(s))return ['cancel','لغو شده'];
+  if(/delay/i.test(s))return ['delay','با تأخیر'];
+  if(/departed|en.?route/i.test(s))return ['ok','در حال انجام'];
+  if(/scheduled/i.test(s))return ['ok','برنامه‌ریزی‌شده'];
+  return ['unknown','نامشخص'];
+}
+function render(groups){
+  var rows=Object.keys(groups).map(function(k){var a=groups[k],x=a[0],q=statusLabel(a);return {code:x.code,dest:x.dest,time:x.time,sources:a.length,status:q}});
+  rows.sort(function(a,b){return a.time.localeCompare(b.time)});
+  if(!rows.length){box.innerHTML='<div class="meta">برای امروز، دادهٔ قابل تأیید از منابع پرواز IKA دریافت نشد.</div>';return}
+  box.innerHTML=rows.map(function(x){
+    return '<div class="flightRow"><div class="flightNo">'+x.code+'<small style="display:block;color:#fffb;font-size:7px">'+(x.sources>=2?'تأیید دو منبع':'یک منبع')+'</small></div><div class="flightDest">'+x.dest+'</div><div class="flightTime">'+fa(x.time)+'</div><div class="flightBadge '+x.status[0]+'">'+x.status[1]+'</div></div>';
+  }).join('');
+  var cancelled=rows.filter(function(x){return x.status[0]==='cancel'}).length;
+  var confirmed=rows.filter(function(x){return x.sources>=2}).length;
+  alertBox.classList.remove('show');
+  if(cancelled>0){
+    alertBox.textContent='⚠️ '+fa(cancelled)+' پرواز در منابع بررسی‌شده «لغو شده» گزارش شده است.';
+    alertBox.classList.add('show');
+  }
+  statusBox.textContent='آخرین بررسی: '+fa(new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Tehran'}))+' · '+fa(confirmed)+' پرواز با تطبیق دو منبع';
+}
+async function getSource(s){
+  var u='https://r.jina.ai/http://'+s.url.replace(/^https?:\/\//,'');
+  var r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error(s.name);
+  var t=await r.text();
+  return s.name==='Airportia'?parseAirportia(t):parseFR24(t);
+}
+async function run(){
+  if(busy)return;busy=true;
+  dateBox.textContent=new Intl.DateTimeFormat('fa-IR-u-ca-persian',{timeZone:'Asia/Tehran',dateStyle:'full'}).format(new Date());
+  box.innerHTML='<div class="meta">در حال بررسی داده‌های زنده فرودگاه امام خمینی (IKA/OIIE)…</div>';
+  statusBox.textContent='در حال بررسی دو منبع…';
+  try{
+    var rr=await Promise.all(SOURCES.map(function(s){return getSource(s).catch(function(){return []})}));
+    var all=rr[0].concat(rr[1]),groups={};
+    all.forEach(function(x){(groups[key(x)]||(groups[key(x)]=[])).push(x)});
+    render(groups);
+    if(!all.length)statusBox.textContent='هیچ دادهٔ قابل تأییدی دریافت نشد؛ داده حدس‌زده نمایش داده نمی‌شود.';
+  }catch(e){
+    box.innerHTML='<div class="meta">دریافت زنده ناموفق بود؛ برای جلوگیری از نمایش اطلاعات ناموثق، دادهٔ قدیمی نمایش داده نمی‌شود.</div>';
+    statusBox.textContent='منابع زنده در دسترس نیستند.';
+  }finally{
+    busy=false;clearTimeout(timer);timer=setTimeout(run,120000);
+  }
+}
+document.getElementById('flightRefresh').onclick=run;
+var ft=document.querySelector('[data-p="flightPage"]');if(ft)ft.addEventListener('click',run);
+run();
 })()</script></body></html>
