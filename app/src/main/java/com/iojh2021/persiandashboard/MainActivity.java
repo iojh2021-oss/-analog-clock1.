@@ -51,6 +51,7 @@ public class MainActivity extends Activity {
             }
         });
         web.addJavascriptInterface(new RatesBridge(), "NativeRates");
+        web.addJavascriptInterface(new FlightsBridge(), "NativeFlights");
         web.loadUrl("file:///android_asset/index.html");
         try {
             cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
@@ -113,6 +114,34 @@ public class MainActivity extends Activity {
                     : "window.onRates&&window.onRates(" + result + ")";
                 web.post(new Runnable() { public void run() { web.evaluateJavascript(js, null); } });
             }}).start();
+        }
+    }
+
+    private class FlightsBridge {
+        @android.webkit.JavascriptInterface public void fetchFlights() {
+            new Thread(new Runnable(){ public void run(){
+                String[] keys={BuildConfig.AERODATABOX_RAPIDAPI_KEY_1,BuildConfig.AERODATABOX_RAPIDAPI_KEY_2,BuildConfig.AERODATABOX_RAPIDAPI_KEY_3};
+                org.json.JSONArray all=new org.json.JSONArray(); int ok=0;
+                try{
+                    java.text.SimpleDateFormat df=new java.text.SimpleDateFormat("yyyy-MM-dd",java.util.Locale.US);
+                    df.setTimeZone(java.util.TimeZone.getTimeZone("Asia/Tehran")); String day=df.format(new java.util.Date());
+                    String[][] ws={{day+"T00:00",day+"T11:59"},{day+"T12:00",day+"T23:59"}};
+                    for(String[] w:ws){org.json.JSONObject j=req(w[0],w[1],keys);if(j!=null){ok++;org.json.JSONArray a=j.optJSONArray("departures");if(a!=null)for(int i=0;i<a.length();i++)all.put(a.get(i));}}
+                    org.json.JSONObject out=new org.json.JSONObject();out.put("departures",all);out.put("windowsOk",ok);
+                    final String js="window.onAeroFlights&&window.onAeroFlights("+out.toString()+")";
+                    web.post(new Runnable(){public void run(){web.evaluateJavascript(js,null);}});
+                }catch(Exception e){web.post(new Runnable(){public void run(){web.evaluateJavascript("window.onAeroFlightsError&&window.onAeroFlightsError()",null);}});}
+            }}).start();
+        }
+        private org.json.JSONObject req(String from,String to,String[] keys){
+            String u="https://aerodatabox.p.rapidapi.com/flights/airports/icao/OIIE/"+from+"/"+to+"?direction=Departure&withLeg=true&withCancelled=true&withCodeshared=true";
+            for(String k:keys){if(k==null||k.trim().isEmpty())continue;try{
+                java.net.HttpURLConnection c=(java.net.HttpURLConnection)new java.net.URL(u).openConnection();
+                c.setConnectTimeout(10000);c.setReadTimeout(20000);c.setRequestProperty("Accept","application/json");c.setRequestProperty("X-RapidAPI-Host","aerodatabox.p.rapidapi.com");c.setRequestProperty("X-RapidAPI-Key",k);
+                int code=c.getResponseCode();java.io.InputStream in=(code>=200&&code<300)?c.getInputStream():c.getErrorStream();java.io.ByteArrayOutputStream b=new java.io.ByteArrayOutputStream();
+                if(in!=null){byte[] z=new byte[16384];int n;while((n=in.read(z))>0)b.write(z,0,n);in.close();}String s=b.toString("UTF-8");c.disconnect();
+                if(code>=200&&code<300)return new org.json.JSONObject(s);
+            }catch(Exception e){}}return null;
         }
     }
 
