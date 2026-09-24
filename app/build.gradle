@@ -1,10 +1,14 @@
 plugins { id 'com.android.application' }
 
 android {
+    buildFeatures { buildConfig = true }
     namespace 'com.iojh2021.persiandashboard'
     compileSdk 35
 
     defaultConfig {
+        buildConfigField 'String', 'AERODATABOX_RAPIDAPI_KEY_1', '"' + (System.getenv('AERODATABOX_RAPIDAPI_KEY_1') ?: '') + '"'
+        buildConfigField 'String', 'AERODATABOX_RAPIDAPI_KEY_2', '"' + (System.getenv('AERODATABOX_RAPIDAPI_KEY_2') ?: '') + '"'
+        buildConfigField 'String', 'AERODATABOX_RAPIDAPI_KEY_3', '"' + (System.getenv('AERODATABOX_RAPIDAPI_KEY_3') ?: '') + '"'
         applicationId 'com.iojh2021.persiandashboard'
         minSdk 23
         targetSdk 35
