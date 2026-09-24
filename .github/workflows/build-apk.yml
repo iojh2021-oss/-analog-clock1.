@@ -27,6 +27,10 @@ jobs:
           gradle-version: '8.9'
 
       - name: ساخت APK
+        env:
+          AERODATABOX_RAPIDAPI_KEY_1: ${{ secrets.AERODATABOX_RAPIDAPI_KEY_1 }}
+          AERODATABOX_RAPIDAPI_KEY_2: ${{ secrets.AERODATABOX_RAPIDAPI_KEY_2 }}
+          AERODATABOX_RAPIDAPI_KEY_3: ${{ secrets.AERODATABOX_RAPIDAPI_KEY_3 }}
         run: gradle --no-daemon :app:assembleDebug
 
       - name: انتشار APK به‌عنوان Artifact
