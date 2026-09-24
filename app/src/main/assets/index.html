@@ -115,42 +115,42 @@ var tb=document.querySelector('[data-p="cryptoPage"]');if(tb)tb.addEventListener
 /* ===================== تب پروازها — AeroDataBox از طریق پل نیتیو NativeFlights ===================== */
 /* کلیدهای API داخل کد نیتیو (MainActivity.java) هستند و اینجا اصلاً دیده نمی‌شوند. */
 
-var box = document.getElementById('flightList'),
-    alertBox = document.getElementById('flightAlert'),
-    statusBox = document.getElementById('flightStatus'),
-    dateBox = document.getElementById('flightDate'),
-    busy = false, timer = null;
+var boxFlight = document.getElementById('flightList'),
+    alertBoxFlight = document.getElementById('flightAlert'),
+    statusBoxFlight = document.getElementById('flightStatus'),
+    dateBoxFlight = document.getElementById('flightDate'),
+    busyFlight = false, timerFlight = null;
 
-function statusMap(s){
+function statusMapFlight(s){
   s = (s||'').toLowerCase();
   if (s.indexOf('cancel') !== -1) return ['cancel','لغو شده'];
   if (s.indexOf('delay') !== -1) return ['delay','با تأخیر'];
   if (s.indexOf('divert') !== -1) return ['delay','مسیر تغییر یافته'];
   if (s === 'unknown' || s === '') return ['unknown','نامشخص'];
-  return ['ok','برنامه‌ریزی‌شده'];
+  return ['ok','برنامه‌ریزی‌شوه'];
 }
 
-function localHM(t){
+function localHMFlight(t){
   if (!t) return '--:--';
   var m = t.match(/(\d{2}):(\d{2})/);
   return m ? (m[1]+':'+m[2]) : t;
 }
 
-function toRow(f){
+function toRowFlight(f){
   var dep = (f && f.departure) || {};
   var time = (dep.revisedTime && dep.revisedTime.local) || (dep.scheduledTime && dep.scheduledTime.local) || '';
   var dest = (f.arrival && f.arrival.airport && (f.arrival.airport.name || f.arrival.airport.iata)) || '---';
   var code = f.number || (f.airline && f.airline.name) || '---';
-  var q = statusMap(f.status);
-  return { code: code, time: localHM(time), dest: dest, cancel: q[0]==='cancel', delay: q[0]==='delay', badge: q };
+  var q = statusMapFlight(f.status);
+  return { code: code, time: localHMFlight(time), dest: dest, cancel: q[0]==='cancel', delay: q[0]==='delay', badge: q };
 }
 
-function render(rows, windowsOk){
+function renderFlight(rows, windowsOk){
   if (!rows.length){
-    box.innerHTML = '<div class="meta">فهرست امروز دریافت نشد.</div>';
+    boxFlight.innerHTML = '<div class="meta">فهرست امروز دریافت نشد.</div>';
   } else {
     rows.sort(function(a,b){ return a.time.localeCompare(b.time) });
-    box.innerHTML = rows.map(function(x){
+    boxFlight.innerHTML = rows.map(function(x){
       return '<div class="flightRow">'
         + '<div class="flightNo">'+x.code+'<small style="display:block;color:#fffb;font-size:7px">AeroDataBox</small></div>'
         + '<div class="flightDest">'+x.dest+'</div>'
@@ -161,17 +161,17 @@ function render(rows, windowsOk){
   }
 
   var c = rows.filter(function(x){ return x.cancel }).length;
-  alertBox.classList.toggle('show', c === rows.length && rows.length > 0);
+  alertBoxFlight.classList.toggle('show', c === rows.length && rows.length > 0);
   if (c === rows.length && rows.length > 0){
-    alertBox.textContent = '⚠️ همه پروازهای فهرست‌شده امروز لغو گزارش شده‌اند.';
+    alertBoxFlight.textContent = '⚠️ همه پروازهای فهرست‌شده امروز لغو گزارش شده‌اند.';
   }
-  statusBox.textContent = 'آخرین بروزرسانی '
+  statusBoxFlight.textContent = 'آخرین بروزرسانی '
     + fa(new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Tehran'}))
     + ' · منبع: AeroDataBox'
     + (windowsOk < 2 ? ' · بخشی از بازه‌ی امروز دریافت نشد' : '');
 
-  if (dateBox) {
-    dateBox.textContent = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
+  if (dateBoxFlight) {
+    dateBoxFlight.textContent = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
       day:'numeric', month:'long', year:'numeric'
     }).format(new Date());
   }
@@ -180,38 +180,39 @@ function render(rows, windowsOk){
 // این توابع را کد نیتیو (MainActivity.java) صدا می‌زند
 window.onAeroFlights = function(data){
   try {
-    var rows = ((data && data.departures) || []).map(toRow);
-    render(rows, (data && data.windowsOk) || 0);
+    var rows = ((data && data.departures) || []).map(toRowFlight);
+    renderFlight(rows, (data && data.windowsOk) || 0);
   } catch(e){
-    statusBox.textContent = 'خطا در پردازش اطلاعات پروازها.';
+    statusBoxFlight.textContent = 'خطا در پردازش اطلاعات پروازها.';
   }
-  busy = false;
+  busyFlight = false;
 };
 
 window.onAeroFlightsError = function(){
-  statusBox.textContent = 'دریافت اطلاعات ناموفق بود. لطفاً دوباره تلاش کنید.';
-  box.innerHTML = '<div class="meta">خطا در ارتباط با سرویس پروازها.</div>';
-  busy = false;
+  statusBoxFlight.textContent = 'دریافت اطلاعات ناموفق بود. لطفاً دوباره تلاش کنید.';
+  boxFlight.innerHTML = '<div class="meta">خطا در ارتباط با سرویس پروازها.</div>';
+  busyFlight = false;
 };
 
-function run(){
-  if (busy) return;
-  busy = true;
-  statusBox.textContent = 'در حال دریافت اطلاعات پروازها...';
+function runFlight(){
+  if (busyFlight) return;
+  busyFlight = true;
+  statusBoxFlight.textContent = 'در حال دریافت اطلاعات پروازها...';
   if (window.NativeFlights && window.NativeFlights.fetchFlights){
     window.NativeFlights.fetchFlights();
   } else {
-    statusBox.textContent = 'این نسخه از اپ به سرویس پروازها متصل نیست (نیاز به نصب مجدد APK جدید).';
-    busy = false;
+    statusBoxFlight.textContent = 'این نسخه از اپ به سرویس پروازها متصل نیست (نیاز به نصب مجدد APK جدید).';
+    busyFlight = false;
   }
 }
 
-document.getElementById('flightRefresh').onclick = run;
-run();
-if (timer) clearInterval(timer);
-timer = setInterval(run, 5 * 60 * 1000);
-addEventListener('online', run);
-document.addEventListener('visibilitychange', function(){ if (!document.hidden) run() });
+document.getElementById('flightRefresh').onclick = runFlight;
+runFlight();
+if (timerFlight) clearInterval(timerFlight);
+timerFlight = setInterval(runFlight, 5 * 60 * 1000);
+addEventListener('online', runFlight);
+document.addEventListener('visibilitychange', function(){ if (!document.hidden) runFlight() });
 /* ===================== پایان تب پروازها ===================== */
+
 
 })()</script></body></html>
