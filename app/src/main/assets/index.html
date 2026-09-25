@@ -154,7 +154,7 @@ function renderFlight(rows, windowsOk){
       return '<div class="flightRow">'
         + '<div class="flightNo">'+x.code+'<small style="display:block;color:#fffb;font-size:7px">AeroDataBox</small></div>'
         + '<div class="flightDest">'+x.dest+'</div>'
-        + '<div class="flightTime">'+fa(x.time)+'</div>'
+        + '<div class="flightTime">'+x.time+'</div>'
         + '<div class="flightBadge '+x.badge[0]+'">'+x.badge[1]+'</div>'
         + '</div>';
     }).join('');
@@ -166,7 +166,7 @@ function renderFlight(rows, windowsOk){
     alertBoxFlight.textContent = '⚠️ همه پروازهای فهرست‌شده امروز لغو گزارش شده‌اند.';
   }
   statusBoxFlight.textContent = 'آخرین بروزرسانی '
-    + fa(new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Tehran'}))
+    + new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Tehran'})
     + ' · منبع: AeroDataBox'
     + (windowsOk < 2 ? ' · بخشی از بازه‌ی امروز دریافت نشد' : '');
 
