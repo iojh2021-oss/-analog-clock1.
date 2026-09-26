@@ -112,8 +112,8 @@ addEventListener('online',run);
 document.addEventListener('visibilitychange',function(){if(!document.hidden)run()});
 var tb=document.querySelector('[data-p="cryptoPage"]');if(tb)tb.addEventListener('click',run);
 })()</script><script>(function(){
-/* ===================== تب پروازها — AeroDataBox از طریق پل نیتیو NativeFlights ===================== */
-/* کلیدهای API داخل کد نیتیو (MainActivity.java) هستند و اینجا اصلاً دیده نمی‌شوند. */
+/* ===================== تب پروازها — AeroDataBox از طریق پروکسی Cloudflare Worker ===================== */
+/* کلید API داخل Cloudflare Worker مخفی است و اینجا اصلاً دیده نمی‌شود. */
 
 var boxFlight = document.getElementById('flightList'),
     alertBoxFlight = document.getElementById('flightAlert'),
@@ -121,13 +121,15 @@ var boxFlight = document.getElementById('flightList'),
     dateBoxFlight = document.getElementById('flightDate'),
     busyFlight = false, timerFlight = null;
 
+var FLIGHT_PROXY_URL = 'https://ika-flights.vnnvxiyrd.workers.dev';
+
 function statusMapFlight(s){
   s = (s||'').toLowerCase();
   if (s.indexOf('cancel') !== -1) return ['cancel','لغو شده'];
   if (s.indexOf('delay') !== -1) return ['delay','با تأخیر'];
   if (s.indexOf('divert') !== -1) return ['delay','مسیر تغییر یافته'];
   if (s === 'unknown' || s === '') return ['unknown','نامشخص'];
-  return ['ok','برنامه‌ریزی‌شوه'];
+  return ['ok','برنامه‌ریزی‌شده'];
 }
 
 function localHMFlight(t){
@@ -177,33 +179,20 @@ function renderFlight(rows, windowsOk){
   }
 }
 
-// این توابع را کد نیتیو (MainActivity.java) صدا می‌زند
-window.onAeroFlights = function(data){
-  try {
-    var rows = ((data && data.departures) || []).map(toRowFlight);
-    renderFlight(rows, (data && data.windowsOk) || 0);
-  } catch(e){
-    statusBoxFlight.textContent = 'خطا در پردازش اطلاعات پروازها.';
-  }
-  busyFlight = false;
-};
-
-window.onAeroFlightsError = function(){
-  statusBoxFlight.textContent = 'دریافت اطلاعات ناموفق بود. لطفاً دوباره تلاش کنید.';
-  boxFlight.innerHTML = '<div class="meta">خطا در ارتباط با سرویس پروازها.</div>';
-  busyFlight = false;
-};
-
-function runFlight(){
+async function runFlight(){
   if (busyFlight) return;
   busyFlight = true;
   statusBoxFlight.textContent = 'در حال دریافت اطلاعات پروازها...';
-  if (window.NativeFlights && window.NativeFlights.fetchFlights){
-    window.NativeFlights.fetchFlights();
-  } else {
-    statusBoxFlight.textContent = 'این نسخه از اپ به سرویس پروازها متصل نیست (نیاز به نصب مجدد APK جدید).';
-    busyFlight = false;
+  try {
+    var res = await fetch(FLIGHT_PROXY_URL, { cache: 'no-store' });
+    var data = await res.json();
+    var rows = ((data && data.departures) || []).map(toRowFlight);
+    renderFlight(rows, (data && data.windowsOk) || 0);
+  } catch(e){
+    statusBoxFlight.textContent = 'دریافت اطلاعات ناموفق بود. لطفاً دوباره تلاش کنید.';
+    boxFlight.innerHTML = '<div class="meta">خطا در ارتباط با سرویس پروازها.</div>';
   }
+  busyFlight = false;
 }
 
 document.getElementById('flightRefresh').onclick = runFlight;
@@ -213,6 +202,7 @@ timerFlight = setInterval(runFlight, 5 * 60 * 1000);
 addEventListener('online', runFlight);
 document.addEventListener('visibilitychange', function(){ if (!document.hidden) runFlight() });
 /* ===================== پایان تب پروازها ===================== */
+
 
 
 })()</script></body></html>
